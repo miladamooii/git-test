@@ -40,6 +40,8 @@ export async function Router() {
      let movieViewRegEx = /#\/movie\/[0-9]+\/[a-z0-9-]+/,
           personViewRegEx = /#\/person\/[0-9]+\/[a-z0-9-]+/,
           genreViewRegEx = /#\/genre\/[0-9]+\/[A-Za-z0-9-]+/,
+          trendingViewRegEx = /#\/trending/,
+          popularViewRegEx = /#\/popular/,
           watchlistViewRegEx = /#\/watchlist/,
           searchViewRegEx = /#\/search\?q\=[A-Za-z0-9-#!%]+/;
 
@@ -70,15 +72,27 @@ export async function Router() {
                               SlidesComponent: MoviePosterCard,
                               slidesData: popularMovies,
                               linkExploreAll:  "#/popular",
-                              sliderClass: 'movies'
+                              sliderClass: 'movies',
+                              genreFilter: {
+                                   genres: genresList,
+                                   includeAll: true,
+                                   initialGenreId: null,
+                                   initialResults: popularMovies,
+                                   updateTitle: true
+                              }
                          }),
                          $popularCategorySection = SliderSection({
                               title: "Browse by category:",
                               SlidesComponent: MoviePosterCard,
                               slidesData: popularActionMovies,
                               sliderClass: 'browse-category',
-                              changeSlidersButtonsData:  genresList,
                               linkExploreAll:  "#/genre/28/Action",
+                              genreFilter: {
+                                   genres: genresList,
+                                   includeAll: false,
+                                   initialGenreId: 28,
+                                   initialResults: popularActionMovies
+                              }
                          });
 
                     $fragment.appendChild( await Header( popularMovies[0]) );
@@ -235,6 +249,44 @@ export async function Router() {
                     $fragment.appendChild( $PersonDetailsSection );
                     $main.appendChild($fragment);
                     api.total_pages = -1;
+               }
+          })
+     }
+     // http://domainName.ext/#/trending
+     else if(trendingViewRegEx.test(hash)){
+          $title.innerText = "Trending Today - Movie App";
+          await ajax({
+               url: api.TRENDING,
+               cbSuccess: (data) => {
+                    $fragment.appendChild( ResultsSection({
+                         title: "Trending Today",
+                         results: data.results,
+                         totalResults: data.total_results,
+                         searchFormIsActive: false
+                    }) );
+                    $main.appendChild($fragment);
+                    api.total_pages = data.total_pages;
+                    api.infinite_url = api.TRENDING;
+                    infiniteScroll();
+               }
+          })
+     }
+     // http://domainName.ext/#/popular
+     else if(popularViewRegEx.test(hash)){
+          $title.innerText = "Popular Movies - Movie App";
+          await ajax({
+               url: api.POPULAR,
+               cbSuccess: (data) => {
+                    $fragment.appendChild( ResultsSection({
+                         title: "Popular Movies",
+                         results: data.results,
+                         totalResults: data.total_results,
+                         searchFormIsActive: false
+                    }) );
+                    $main.appendChild($fragment);
+                    api.total_pages = data.total_pages;
+                    api.infinite_url = api.POPULAR;
+                    infiniteScroll();
                }
           })
      }

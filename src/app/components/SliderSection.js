@@ -1,6 +1,6 @@
 import { SectionTitle } from "./SectionTitle.js"
 import { SwiperEstructure } from "./SwiperEstructure.js";
-import { ChangeSliderButtons } from "./ChangeSliderButtons";
+import { GenreFilter } from "./GenreFilter.js";
 
 export function SliderSection(conf) {
 
@@ -13,7 +13,7 @@ export function SliderSection(conf) {
                slidesData,
                linkExploreAll,
                sliderClass,
-               changeSlidersButtonsData
+               genreFilter
           } = conf;
 
      $section.classList.add("slider-section", sliderClass);
@@ -24,11 +24,12 @@ export function SliderSection(conf) {
                <a href="${linkExploreAll}" class="slider-section__explore-link">Explore all</a>
           `);
 
-     if(changeSlidersButtonsData)
-          $section.insertAdjacentElement("beforeend", ChangeSliderButtons({
+     if(genreFilter)
+          $section.insertAdjacentElement("beforeend", GenreFilter({
+               ...genreFilter,
                sliderClass,
-               data: changeSlidersButtonsData,
-               SlidesComponent
+               SlidesComponent,
+               linkExploreAll
           }));
 
      $section.insertAdjacentElement( "beforeend", SwiperEstructure({

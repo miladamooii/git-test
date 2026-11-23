@@ -20,7 +20,7 @@ export async function infiniteScroll() {
                     api.page++;
                     d.getElementById("results-spin-loader").style.display = "block";
                     await ajax({
-                    url: `${api.infinite_url}&page=${api.page}`,
+                    url: `${api.infinite_url}${api.infinite_url.includes("?") ? "&" : "?"}page=${api.page}`,
                     cbSuccess: async (data) => {
                          const movies = data.results,
                               $fragment = d.createDocumentFragment();
