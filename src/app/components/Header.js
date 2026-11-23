@@ -7,6 +7,7 @@ import string_to_slug from "../helpers/string_to_slug.js"
 import number_with_commas from "../helpers/number_with_commas.js";
 import { cut_overview } from "../helpers/cut_overview.js";
 import { ModalVideo } from "./ModalVideo.js";
+import { watchlistButtonHTML } from "../helpers/watchlist.js";
 
 export async function Header(props) {
      const d = document,
@@ -28,6 +29,7 @@ export async function Header(props) {
                <button type="button" aria-label="Play Trailer" id="watch-trailer" data-key="${trailerKey}">
                     <svg xmlns="http://www.w3.org/2000/svg" width="55" height="55" viewBox="0 0 55 55"><circle cx="27.5" cy="27.5" r="26.75" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></circle><path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.97 40.81L40.64 27.5 20.97 14.19v26.62z"></path></svg>
                </button>
+               ${watchlistButtonHTML(props)}
                ${
                     props.backdrop_path
                     ? `<img src="https://image.tmdb.org/t/p/w1280${props.backdrop_path}" alt="">`

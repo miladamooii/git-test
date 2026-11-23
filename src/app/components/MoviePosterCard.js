@@ -1,6 +1,7 @@
 import string_to_slug from "../helpers/string_to_slug.js";
 import starFill from "../assets/resources/star-fill.png";
 import starFrame from "../assets/resources/star-frame.png";
+import { watchlistButtonHTML } from "../helpers/watchlist.js";
 
 
 export function MoviePosterCard(data) {
@@ -13,26 +14,30 @@ export function MoviePosterCard(data) {
 
      if(props) {
           props.slug = `movie/${props.id}/${string_to_slug(props.title)}`;
+          $card.dataset.watchlistMovieId = props.id;
           $card.insertAdjacentHTML("beforeend", `
-               <a href="#/${props.slug}" class="card__link movie-link" title="${props.title}" data-id="${props.id}">
-                    <div class="card__cover">
-                         ${
-                              props.poster_path
-                              ? `<img src="https://image.tmdb.org/t/p/w342${props.poster_path}" alt="${props.title}" >`
-                              : `<span><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill-rule="evenodd" clip-rule="evenodd" fill="#20212"><path d="M24 22h-24v-20h24v20zm-1-19h-22v18h22v-18zm-1 16h-19l4-7.492 3 3.048 5.013-7.556 6.987 12zm-11.848-2.865l-2.91-2.956-2.574 4.821h15.593l-5.303-9.108-4.806 7.243zm-4.652-11.135c1.38 0 2.5 1.12 2.5 2.5s-1.12 2.5-2.5 2.5-2.5-1.12-2.5-2.5 1.12-2.5 2.5-2.5zm0 1c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5.672-1.5 1.5-1.5z"></path></svg></span>`
-                         }
-                         
-                    </div>
-                    <h3 class="card__name">${props.title}</h3>
-                    <div class="card__rating">
-                         <div class="card__stars">
-                              <div style="width: ${props.vote_average*10}%"></div>
+               <div class="card__inner">
+                    <a href="#/${props.slug}" class="card__link movie-link" title="${props.title}" data-id="${props.id}">
+                         <div class="card__cover">
+                              ${
+                                   props.poster_path
+                                   ? `<img src="https://image.tmdb.org/t/p/w342${props.poster_path}" alt="${props.title}" >`
+                                   : `<span><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill-rule="evenodd" clip-rule="evenodd" fill="#20212"><path d="M24 22h-24v-20h24v20zm-1-19h-22v18h22v-18zm-1 16h-19l4-7.492 3 3.048 5.013-7.556 6.987 12zm-11.848-2.865l-2.91-2.956-2.574 4.821h15.593l-5.303-9.108-4.806 7.243zm-4.652-11.135c1.38 0 2.5 1.12 2.5 2.5s-1.12 2.5-2.5 2.5-2.5-1.12-2.5-2.5 1.12-2.5 2.5-2.5zm0 1c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5.672-1.5 1.5-1.5z"></path></svg></span>`
+                              }
+                              
                          </div>
-                         <div class="card__vote">
-                              ${props.vote_average}
+                         <h3 class="card__name">${props.title}</h3>
+                         <div class="card__rating">
+                              <div class="card__stars">
+                                   <div style="width: ${props.vote_average*10}%"></div>
+                              </div>
+                              <div class="card__vote">
+                                   ${props.vote_average}
+                              </div>
                          </div>
-                    </div>
-               </a>
+                    </a>
+                    ${watchlistButtonHTML(props)}
+               </div>
           `);
      }
 

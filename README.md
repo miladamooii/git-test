@@ -6,6 +6,7 @@ A responsive Single Page Application (SPA) for discovering and exploring movies,
 
 - **Movie Search:** Search for movies by title.
 - **Movie Details:** View detailed information about each movie.
+- **Watchlist:** Save movies with the bookmark button and browse them later at `#/watchlist`. The list is stored in `localStorage`.
 - **Dynamic Content:** Browse and display movie data dynamically without reloading the page.
 - **Single Page Navigation:** Navigate between different views without full-page refreshes.
 - **Responsive Design:** Optimized for desktop, tablet, and mobile devices.
@@ -56,7 +57,6 @@ movie-app/
 
 - Add movie categories and genre filters.
 - Implement pagination or infinite scrolling.
-- Add a watchlist feature for saving favorite movies.
 - Improve loading states and error handling.
 - Add dark/light theme support.
 

@@ -7,6 +7,7 @@ import { ajax } from "../helpers/ajax.js";
 import api from "../helpers/TMDb-api.js";
 import genresList from "../helpers/genresList";
 import { infiniteScroll } from "../helpers/infinite_scroll";
+import { getWatchlist, syncWatchlistUI } from "../helpers/watchlist.js";
 
 //components
 import { Header } from "./Header";
@@ -39,6 +40,7 @@ export async function Router() {
      let movieViewRegEx = /#\/movie\/[0-9]+\/[a-z0-9-]+/,
           personViewRegEx = /#\/person\/[0-9]+\/[a-z0-9-]+/,
           genreViewRegEx = /#\/genre\/[0-9]+\/[A-Za-z0-9-]+/,
+          watchlistViewRegEx = /#\/watchlist/,
           searchViewRegEx = /#\/search\?q\=[A-Za-z0-9-#!%]+/;
 
      // http://domainName.ext/# || http://domainName.ext/
@@ -236,6 +238,21 @@ export async function Router() {
                }
           })
      }
+     // http://domainName.ext/#/watchlist
+     else if(watchlistViewRegEx.test(hash)){
+          const movies = getWatchlist();
+
+          $title.innerText = "My Watchlist - Movie App";
+          $fragment.appendChild( ResultsSection({
+               title: "My Watchlist",
+               results: movies,
+               classList: ["watchlist-view"],
+               totalResults: movies.length,
+               emptyMessage: "Your watchlist is empty. Save movies with the bookmark button."
+          }) );
+          $main.appendChild($fragment);
+          api.total_pages = -1;
+     }
      // http://domainName.ext/#/search?q=movie-title
      // http://localhost:8080/#/search?q=pokemon
      else if(searchViewRegEx.test(hash)){
@@ -269,5 +286,6 @@ export async function Router() {
           }))
      }
 
+     syncWatchlistUI();
      d.querySelector(".loader-container").style.display = "none";
 }

@@ -10,6 +10,9 @@ import resetStyles from "./app/assets/styles/reset.css";
 import mainStyles from "./app/assets/styles/main.css";
 
 import { App } from "./app/App.js";
+import { initWatchlist } from "./app/helpers/watchlist.js";
+
+initWatchlist();
 
 document.addEventListener("DOMContentLoaded", App);
 window.addEventListener("hashchange", App);

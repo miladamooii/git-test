@@ -12,7 +12,8 @@ export function ResultsSection(data) {
                searchFormIsActive,
                results, 
                classList,
-               totalResults
+               totalResults,
+               emptyMessage
           } = data;
 
      $section.classList.add("results");
@@ -33,7 +34,7 @@ export function ResultsSection(data) {
                     <h2 class="results__title">${title}</h2>
                     ${!totalResults
                          ? ""
-                         : `<h3>${number_with_commas(totalResults)} Results</h3>`
+                         : `<h3 data-results-total>${number_with_commas(totalResults)} Results</h3>`
                     }
                </div>`
           }
@@ -49,7 +50,7 @@ export function ResultsSection(data) {
           );
      else
           $section.querySelector(".results__items").insertAdjacentHTML("beforeend", `
-               <h4>No matches found. Try a different search...</h4>
+               <h4>${emptyMessage || "No matches found. Try a different search..."}</h4>
           `)
 
      $styles.insertAdjacentHTML("beforeend", `
