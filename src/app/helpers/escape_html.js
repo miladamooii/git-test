@@ -1,0 +1,11 @@
+export default function escape_html(value = "") {
+     const entities = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+     };
+
+     return String(value).replace(/[&<>"']/g, char => entities[char]);
+}

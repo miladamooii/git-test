@@ -6,7 +6,8 @@ Swiper.use([Navigation, Pagination]);
 import { ajax } from "../helpers/ajax.js";
 import api from "../helpers/TMDb-api.js";
 import genresList from "../helpers/genresList";
-import { infiniteScroll } from "../helpers/infinite_scroll";
+import { infiniteScroll, resetInfiniteScroll } from "../helpers/infinite_scroll";
+import { showLoadingState } from "../helpers/loading_state.js";
 import { getWatchlist, syncWatchlistUI } from "../helpers/watchlist.js";
 
 //components
@@ -24,6 +25,7 @@ import { PageNotFound } from "./PageNotFound";
 export async function Router() {
      window.scrollTo(0,0)
      api.page = 1;
+     resetInfiniteScroll();
 
      const d = document,
           w = window,
@@ -47,6 +49,8 @@ export async function Router() {
 
      // http://domainName.ext/# || http://domainName.ext/
      if (!hash || hash === "#/" ) {
+          const hideLoading = showLoadingState("home");
+
           await ajax({
                url: [
                     api.TRENDING,
@@ -55,6 +59,8 @@ export async function Router() {
                     `${api.POPULAR}&with_genres=28`,
                ],
                cbSuccess: async (data) => {
+                    hideLoading();
+
                     const trendingMovies = data[0].results,
                          popularMovies = data[1].results,
                          popularActionMovies = data[3].results,
@@ -135,17 +141,22 @@ export async function Router() {
                     SwiperConfiguration();
                }
           });
+          hideLoading();
      }
      // http://domainName.ext/#/movie/movie-id/movie-name
      // http://localhost:8080/#/movie/527774/raya-and-the-last-dragon
      else if(movieViewRegEx.test(hash)){
-          const movieId = hash.split("/")[2];
+          const movieId = hash.split("/")[2],
+                hideLoading = showLoadingState("details");
+
           await ajax({
                url: [
                     `${api.MOVIE}/${movieId}${api.appendVideosImagesCast}`,
                      `${api.MOVIE}/${movieId}/similar`
                ],
                cbSuccess: async (data) => {
+                    hideLoading();
+
                     const currentMovie = data[0],
                          similarMovies = data[1].results;
 
@@ -200,16 +211,34 @@ export async function Router() {
                     SwiperConfiguration();
                }
           })
+          hideLoading();
      }
      // http://domainName.ext/#/genre/genre-id/genre-name
      // http://localhost:8080/#/genre/12/Adventure
      else if(genreViewRegEx.test(hash)){
           const genreId = hash.split("/")[2],
-               genreName = genresList.find(genre => genre.id == genreId).name;
+               genre = genresList.find(genre => genre.id == genreId);
+
+          if(!genre) {
+               $title.innerText = "Genre not found - Movie App";
+               $main.appendChild(PageNotFound({
+                    title: "Genre not found",
+                    message: "This genre doesn't exist or is no longer available.",
+                    backHome: true
+               }));
+               d.querySelector(".loader-container").style.display = "none";
+               return;
+          }
+
+          const genreName = genre.name,
+                hideLoading = showLoadingState("results");
+
           $title.innerText = genreName + "  - Movie App";
           await ajax({
                url: `${api.POPULAR}${api.withGenres}${genreId}`,
                cbSuccess: async (data) => {
+                    hideLoading();
+
                     const $resultsSection = ResultsSection({
                          title: `Movie Genre: ${decodeURIComponent(genreName)}`,
                          results: data.results,
@@ -224,11 +253,14 @@ export async function Router() {
                     infiniteScroll();
                }
           })
+          hideLoading();
      }
      // http://domainName.ext/#/person/person-id/person-name
      // http://localhost:8080/#/person/6944/octavia-spencer
      else if(personViewRegEx.test(hash)){
-          const personId = hash.split("/")[2];
+          const personId = hash.split("/")[2],
+                hideLoading = showLoadingState("details");
+
           await ajax({
                url: [
                     `${api.PERSON}/${personId}`,
@@ -236,6 +268,8 @@ export async function Router() {
                     `${api.PERSON}/${personId}/images`
                ],
                cbSuccess: (data) => {
+                    hideLoading();
+
                     const biography = data[0],
                          movieCredits = data[1],
                          images = data[2];
@@ -251,13 +285,18 @@ export async function Router() {
                     api.total_pages = -1;
                }
           })
+          hideLoading();
      }
      // http://domainName.ext/#/trending
      else if(trendingViewRegEx.test(hash)){
+          const hideLoading = showLoadingState("results");
+
           $title.innerText = "Trending Today - Movie App";
           await ajax({
                url: api.TRENDING,
                cbSuccess: (data) => {
+                    hideLoading();
+
                     $fragment.appendChild( ResultsSection({
                          title: "Trending Today",
                          results: data.results,
@@ -270,13 +309,18 @@ export async function Router() {
                     infiniteScroll();
                }
           })
+          hideLoading();
      }
      // http://domainName.ext/#/popular
      else if(popularViewRegEx.test(hash)){
+          const hideLoading = showLoadingState("results");
+
           $title.innerText = "Popular Movies - Movie App";
           await ajax({
                url: api.POPULAR,
                cbSuccess: (data) => {
+                    hideLoading();
+
                     $fragment.appendChild( ResultsSection({
                          title: "Popular Movies",
                          results: data.results,
@@ -289,6 +333,7 @@ export async function Router() {
                     infiniteScroll();
                }
           })
+          hideLoading();
      }
      // http://domainName.ext/#/watchlist
      else if(watchlistViewRegEx.test(hash)){
@@ -308,11 +353,15 @@ export async function Router() {
      // http://domainName.ext/#/search?q=movie-title
      // http://localhost:8080/#/search?q=pokemon
      else if(searchViewRegEx.test(hash)){
+          const hideLoading = showLoadingState("results");
+
           $title.innerText = "Search - Movie App"
           const keyWord = hash.slice(hash.indexOf("?q=")+3, hash.length);
           await ajax({
                url: `${api.SEARCH}${keyWord}`,
                cbSuccess: async (data) => {
+                    hideLoading();
+
                     const $resultsSection = ResultsSection({
                          title: `Search For: ${decodeURIComponent(keyWord)}`,
                          keyWord: decodeURIComponent(keyWord),
@@ -328,6 +377,7 @@ export async function Router() {
                     infiniteScroll();
                }
           })
+          hideLoading();
      }
      else {
           $title.innerText = "This page could not be found - Movie App"

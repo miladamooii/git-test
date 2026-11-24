@@ -1,68 +1,111 @@
 import TMDB_KEYS from "./TMDb-keys.js"
-import { PageNotFound } from "../components/PageNotFound.js"
+import { RequestError } from "../components/RequestError.js"
+
+const REQUEST_TIMEOUT = 12000;
 
 export async function ajax(props) {
 
-     let { url } = props,
+     const { url, cbSuccess, cbError, showGlobalError = true } = props,
+          controller = new AbortController(),
+          timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT),
+          requestHash = location.hash,
           options = {
                headers: new Headers({
                     'Authorization': `Bearer ${TMDB_KEYS.v4}`,
                     'Content-Type': 'application/json;charset=utf-8',
                }),
                method: 'GET',
+               signal: controller.signal
+          };
+
+     try {
+          let data;
+
+          if(Array.isArray(url)) {
+               const responses = await Promise.all(url.map(requestUrl => fetch(requestUrl, options).then(assertOk)));
+               data = await Promise.all(responses.map(response => response.json()));
+          } else {
+               const response = await fetch(url, options),
+                    checkedResponse = await assertOk(response);
+
+               data = await checkedResponse.json();
           }
 
-     if (Array.isArray(url) )
-          await multipleRequest(props, options);
-     else
-          await oneRequest(props, options);
+          if(isStale(requestHash)) return false;
+
+          if(typeof cbSuccess === "function") await cbSuccess(data);
+          return true;
+     } catch(err) {
+          const errorInfo = normalizeError(err);
+
+          console.error("Request failed", err);
+          if(isStale(requestHash)) return false;
+
+          if(typeof cbError === "function") cbError(errorInfo, err);
+          else if(showGlobalError) renderGlobalError(errorInfo);
+
+          return false;
+     } finally {
+          clearTimeout(timeoutId);
+     }
 }
 
-// One Request
-async function oneRequest(props, options) {
+async function assertOk(response) {
+     if(response.ok) return response;
 
-     let { url, cbSuccess } = props;
+     const message = await readErrorMessage(response),
+          error = new Error(message);
 
-     await fetch(url, options)
-          .then( (res) => (res.ok ? res.json() : Promise.reject(res) ) )
-          .then( (json) => cbSuccess(json) )
-          .catch( (err) => {
-               let title = err.status ? `Error ${err.status}` : "Error accessing to the API",
-                    message = err.statusTet || "An error has occurred";
-               const $title = document.querySelector("title"),
-                    $main = document.getElementById("main");
-
-               $title.innerText = "Error - Movie App"
-               $main.insertAdjacentElement("beforeend",PageNotFound({
-                    title,
-                    message,
-                    tryAgain: true
-               }))
-               console.log("Error", err);
-          });
+     error.status = response.status;
+     error.statusText = message;
+     throw error;
 }
 
-// Two or more Request
-async function multipleRequest(props, options) {
+async function readErrorMessage(response) {
+     try {
+          const data = await response.json();
+          return data.status_message || data.message || response.statusText || "An error has occurred";
+     } catch(err) {
+          return response.statusText || "An error has occurred";
+     }
+}
 
-     let { url, cbSuccess } = props,
-          urls = url.map( url => fetch(url, options));
+function normalizeError(err) {
+     if(err.name === "AbortError")
+          return {
+               title: "Request timed out",
+               message: "The movie service took too long to respond. Check your connection and try again."
+          };
 
-     await Promise.all(urls)
-          .then( (responses) =>Promise.all(responses.map(res => res.json()) ) )
-          .then( (data) => cbSuccess(data) )
-          .catch( (err) => {
-               let title = err.status ? `Error ${err.status}` : "Error accessing to the API",
-                    message = err.statusTet || "An error has occurred"
-               const $title = document.querySelector("title"),
-                    $main = document.getElementById("main");
+     if(typeof navigator !== "undefined" && navigator.onLine === false)
+          return {
+               title: "You're offline",
+               message: "Check your internet connection and try again."
+          };
 
-               $title.innerText = "Error - Movie App"
-               $main.insertAdjacentElement("beforeend",PageNotFound({
-                    title,
-                    message,
-                    tryAgain: true
-               }))
-               console.log("Error", err);
-          });
+     if(err.status)
+          return {
+               title: `Error ${err.status}`,
+               message: err.statusText || "The movie service could not complete this request."
+          };
+
+     return {
+          title: "Couldn't load movies",
+          message: "Something went wrong while contacting the movie service. Please try again."
+     };
+}
+
+function isStale(requestHash) {
+     return requestHash !== location.hash;
+}
+
+function renderGlobalError(errorInfo) {
+     const $title = document.querySelector("title"),
+          $main = document.getElementById("main");
+
+     if($title) $title.innerText = `${errorInfo.title} - Movie App`;
+     if(!$main) return;
+
+     $main.querySelectorAll(".request-error").forEach($error => $error.remove());
+     $main.insertAdjacentElement("beforeend", RequestError(errorInfo));
 }

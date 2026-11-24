@@ -2,6 +2,7 @@ import { ajax } from "../helpers/ajax.js";
 import api from "../helpers/TMDb-api.js";
 import string_to_slug from "../helpers/string_to_slug.js";
 import { syncWatchlistUI } from "../helpers/watchlist.js";
+import { RequestError } from "./RequestError.js";
 
 export function GenreFilter(conf) {
      const d = document,
@@ -87,6 +88,10 @@ export function GenreFilter(conf) {
                     color: #fff;
                }
 
+               .genre-filter__error {
+                    width: 100%;
+               }
+
                @media (min-width: 600px) {
                     .genre-filter__label {
                          width: auto;
@@ -127,6 +132,11 @@ export function GenreFilter(conf) {
           return genre
                ? `#/genre/${genre.id}/${string_to_slug(genre.name)}`
                : linkExploreAll;
+     }
+
+     function clearInlineError() {
+          const $error = $container.querySelector(".genre-filter__error");
+          if($error) $error.remove();
      }
 
      function renderSlides(movies, exploreLink) {
@@ -174,28 +184,25 @@ export function GenreFilter(conf) {
           syncWatchlistUI();
      }
 
-     $container.addEventListener("click", async e => {
-          const $chip = e.target.closest(".genre-filter__chip");
-          if(!$chip || !$container.contains($chip)) return;
-
-          const genreId = $chip.dataset.genreId || "";
-          if(genreId === String(activeGenreId || "")) return;
-
-          activeGenreId = genreId || null;
-          setActiveChip(genreId);
+     async function applyGenreFilter(genreId, previousGenreId = activeGenreId) {
+          clearInlineError();
 
           const currentRequest = ++requestId,
                $section = $container.closest(".slider-section"),
                $backdrop = $section?.querySelector(`.${sliderClass} .backdrop`),
+               $exploreLink = $section?.querySelector(".slider-section__explore-link"),
+               $title = $section?.querySelector(".slider-section__title"),
                genre = getGenre(genreId),
-               exploreLink = getExploreLink(genreId);
+               exploreLink = getExploreLink(genreId),
+               previousExploreHref = $exploreLink?.href,
+               previousTitle = $title?.textContent.trim();
+
+          activeGenreId = genreId || null;
+          setActiveChip(genreId);
 
           if($backdrop) $backdrop.style.display = "block";
-
-          const $exploreLink = $section?.querySelector(".slider-section__explore-link");
           if($exploreLink && linkExploreAll) $exploreLink.href = exploreLink;
 
-          const $title = $section?.querySelector(".slider-section__title");
           if($title && updateTitle) {
                const baseTitle = $container.dataset.baseTitle || $title.textContent.trim();
 
@@ -210,13 +217,46 @@ export function GenreFilter(conf) {
           else
                await ajax({
                     url: `${api.POPULAR}&with_genres=${genreId}`,
-                    cbSuccess: data => results = data.results
+                    showGlobalError: false,
+                    cbSuccess: (data) => results = data.results,
+                    cbError: (errorInfo) => {
+                         if(currentRequest !== requestId) return;
+
+                         activeGenreId = previousGenreId;
+                         setActiveChip(previousGenreId);
+
+                         if($exploreLink && linkExploreAll && previousExploreHref)
+                              $exploreLink.href = previousExploreHref;
+
+                         if($title && updateTitle && previousTitle !== undefined)
+                              $title.textContent = previousTitle;
+
+                         const $error = RequestError({
+                              ...errorInfo,
+                              compact: true,
+                              retryLabel: "Retry filter",
+                              onRetry: () => applyGenreFilter(genreId, previousGenreId)
+                         });
+
+                         $error.classList.add("genre-filter__error");
+                         $container.appendChild($error);
+                    }
                });
 
           if($backdrop) $backdrop.style.display = "none";
           if(currentRequest !== requestId || !results) return;
 
           renderSlides(results, exploreLink);
+     }
+
+     $container.addEventListener("click", e => {
+          const $chip = e.target.closest(".genre-filter__chip");
+          if(!$chip || !$container.contains($chip)) return false;
+
+          const genreId = $chip.dataset.genreId || "";
+          if(genreId === String(activeGenreId || "")) return false;
+
+          applyGenreFilter(genreId);
      });
 
      return $container;
